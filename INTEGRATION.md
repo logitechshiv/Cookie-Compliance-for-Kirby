@@ -51,8 +51,25 @@ tabs:
     extends: cookie-compliance/settings
 ```
 
-After saving, the Panel shows a **Datenschutz-Banner** tab under *Site*, with
-every text, link and colour pre-filled and editable.
+After saving, the Panel shows a **Datenschutz-Banner** tab under *Site*.
+
+### Step 2b — seed the defaults (recommended)
+
+Run once, from the project root:
+
+```
+php site/plugins/kirby-cookie-compliance/bin/seed-defaults.php
+```
+
+This writes every default — all the German texts **and** the colour codes — into
+the site's content file, so an editor opens the tab and sees real, editable
+values rather than blank inputs. Add `--dry-run` to preview first.
+
+It is safe to re-run: a field that already has a value is never overwritten.
+
+Skipping this is fine — the plugin falls back to exactly the same values at
+runtime, so the banner renders correctly either way. Seeding only changes what
+an editor *sees* in the Panel.
 
 > Kirby has no mechanism for a plugin to inject a tab into an existing site
 > blueprint, which is why this one line cannot be avoided. It is a blueprint

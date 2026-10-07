@@ -47,9 +47,15 @@ template edits and no changes to your site's JavaScript.
 ## Panel settings
 
 All texts, legal links and colours are edited in the **Datenschutz-Banner** tab —
-no `config.php` entries needed. Every field arrives pre-filled with its real
-default; clearing one falls back to the plugin's own translation or default
-colour, so nothing can end up blank.
+no `config.php` entries needed. Clearing a field falls back to the plugin's own
+translation or default colour, so nothing can end up blank.
+
+Run once after install to fill the tab with editable values instead of blank
+inputs:
+
+```
+php site/plugins/kirby-cookie-compliance/bin/seed-defaults.php
+```
 
 Colours drive `--kcc-*` custom properties inside the plugin's inlined `<style>`,
 so nothing depends on the site's CSS build or token names. Values are validated
