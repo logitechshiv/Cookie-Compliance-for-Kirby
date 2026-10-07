@@ -11,8 +11,15 @@ namespace Kirbycode\CookieCompliance;
  */
 final class Injector
 {
-    public static function apply(string $html): string
+    public static function apply(string $html, \Kirby\Cms\Page|null $page = null): string
     {
+        // A Panel live preview renders the page into an iframe as an editing
+        // surface, not as a visit. Covering it with the consent dialog, and
+        // locking its scroll until someone answers one, stops the editor from
+        // seeing the page they are editing. The scanner still runs, so the
+        // preview keeps showing exactly what an un-consented visitor gets.
+        $preview = static::isPanelPreview($page);
+
         if (option('kirbycode.cookie-compliance.inject.head', true) === true) {
             $html = static::afterOpeningTag($html, 'head', 'cookie-compliance/consent-mode');
         }
@@ -21,15 +28,37 @@ final class Injector
             $html = static::afterOpeningTag($html, 'body', 'cookie-compliance/gtm-noscript');
         }
 
-        if (Consent::isDecided() === false) {
+        if ($preview === false && Consent::isDecided() === false) {
             $html = static::lockScroll($html);
         }
 
-        if (option('kirbycode.cookie-compliance.inject.banner', true) === true) {
+        if ($preview === false && option('kirbycode.cookie-compliance.inject.banner', true) === true) {
             $html = static::beforeClosingBody($html, 'cookie-compliance/banner');
         }
 
         return $html;
+    }
+
+    /**
+     * True while a Panel preview plugin is rendering this page.
+     *
+     * Preview plugins render a throw-away model and mark it with a `previewMode`
+     * field — Kirby Live Preview sets it on the page and on the site model. The
+     * check is kept generic rather than tied to one plugin, and a project that
+     * already uses that field name for something else can opt out with
+     * `inject.inPreview`.
+     */
+    private static function isPanelPreview(\Kirby\Cms\Page|null $page): bool
+    {
+        if ($page === null) {
+            return false;
+        }
+
+        if (option('kirbycode.cookie-compliance.inject.inPreview', false) === true) {
+            return false;
+        }
+
+        return $page->content()->get('previewMode')->toBool() === true;
     }
 
     /**

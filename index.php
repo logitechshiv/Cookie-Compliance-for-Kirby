@@ -209,7 +209,7 @@ App::plugin('kirbycode/cookie-compliance', [
 
             // Scan the site's own markup first, then add ours — so the plugin's
             // scripts never pass through its own scanner.
-            return Injector::apply(Scanner::apply($html));
+            return Injector::apply(Scanner::apply($html), $page);
         },
     ],
 ]);
