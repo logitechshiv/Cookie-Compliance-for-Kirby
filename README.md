@@ -4,10 +4,8 @@ Category-based GDPR/DSGVO consent manager for Kirby 5, with **server-side
 gating**, Google Consent Mode v2, automatic third-party scanning and a runtime
 guard for JavaScript-created embeds.
 
-By [kirbycode](https://www.kirbycode.com/) · MIT licensed.
-
-Forked from `lohnzich/opentable-consent` by LOHNZICH (MIT). The original
-copyright notice is retained in `LICENSE` as that licence requires.
+By [kirbycode](https://www.kirbycode.com/) · MIT licensed. See `LICENSE` for
+copyright and attribution.
 
 ## Install
 
