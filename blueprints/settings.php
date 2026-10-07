@@ -88,7 +88,7 @@ return [
     'icon'  => 'shield',
 
     'sections' => [
-        'consent_settings' => [
+        'cookie_compliance_fields' => [
             'type'   => 'fields',
             'fields' => [
                 'consent_info' => [
