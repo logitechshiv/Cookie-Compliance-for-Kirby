@@ -1,0 +1,42 @@
+{
+    "name": "kirbycode/kirby-cookie-compliance",
+    "description": "Cookie Compliance for Kirby — category-based GDPR consent with server-side gating, Google Consent Mode v2, automatic third-party scanning and a runtime guard for JavaScript-created embeds",
+    "type": "kirby-plugin",
+    "license": "MIT",
+    "version": "1.0.0",
+    "homepage": "https://www.kirbycode.com/",
+    "keywords": [
+        "kirby",
+        "kirby-plugin",
+        "gdpr",
+        "dsgvo",
+        "cookie",
+        "consent",
+        "consent-mode",
+        "privacy"
+    ],
+    "authors": [
+        {
+            "name": "kirbycode",
+            "email": "shiv.sheladiya@gmail.com",
+            "homepage": "https://www.kirbycode.com/",
+            "role": "Developer"
+        },
+        {
+            "name": "LOHNZICH",
+            "role": "Original author of lohnzich/opentable-consent, from which this is derived"
+        }
+    ],
+    "support": {
+        "email": "shiv.sheladiya@gmail.com",
+        "source": "https://github.com/kirbycode/kirby-cookie-compliance",
+        "issues": "https://github.com/kirbycode/kirby-cookie-compliance/issues"
+    },
+    "require": {
+        "php": ">=8.2",
+        "getkirby/composer-installer": "^1.2"
+    },
+    "extra": {
+        "installer-name": "kirby-cookie-compliance"
+    }
+}

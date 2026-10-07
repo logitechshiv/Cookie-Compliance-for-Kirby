@@ -1,0 +1,254 @@
+/*
+ * Plain CSS, inlined by the banner snippet, themed entirely through the
+ * --kcc-* custom properties that Settings::cssVariables() emits just above it.
+ *
+ * Two deliberate choices:
+ *
+ * 1. No dependency on the site's own tokens. An earlier version referenced
+ *    var(--color-primary) / var(--color-secondary), which do not exist in every
+ *    theme — so the banner silently fell back to the colours of the project it
+ *    was forked from. Every colour here now resolves to a value the plugin
+ *    itself controls.
+ * 2. No Tailwind. The consent dialog is a legal-compliance component and must
+ *    render correctly on a fresh checkout where nobody has run the CSS build.
+ */
+
+.consent-banner {
+    position: fixed;
+    inset: 0;
+    z-index: 1000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--kcc-overlay, #400530b3);
+}
+
+.consent-banner[hidden] {
+    display: none !important;
+}
+
+.consent-banner__panel {
+    max-width: 734px;
+    width: 100%;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    margin: 0 auto;
+    background: var(--kcc-surface, #fff);
+    color: var(--kcc-text, #400530);
+    border: 1px solid color-mix(in srgb, var(--kcc-text, #400530) 15%, transparent);
+    padding: 24px;
+    box-sizing: border-box;
+}
+
+.consent-banner__title {
+    font-size: 20px;
+    color: var(--kcc-text, #400530);
+    margin: 0 0 12px;
+}
+
+.consent-banner__text {
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0 0 20px;
+}
+
+.consent-banner__options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.consent-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    font-size: 14px;
+}
+
+.consent-option__hint {
+    display: block;
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+.consent-option input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--kcc-accent, #ff4c5e);
+    flex-shrink: 0;
+}
+
+.consent-option input:disabled {
+    opacity: 0.55;
+}
+
+.consent-banner__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.consent-banner__btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 21px;
+    border-radius: 999px;
+    border: 1px solid var(--kcc-button-text, #400530);
+    background: transparent;
+    color: var(--kcc-button-text, #400530);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.consent-banner__btn--primary {
+    background: var(--kcc-accent, #ff4c5e);
+    border-color: var(--kcc-accent, #ff4c5e);
+    color: var(--kcc-accent-text, #fff);
+}
+
+.consent-banner__btn:hover {
+    background: var(--kcc-accent, #ff4c5e);
+    border-color: var(--kcc-accent, #ff4c5e);
+    color: var(--kcc-accent-text, #fff);
+}
+
+/* Keyboard focus must stay visible: the reject button has to be as reachable
+   as the accept button, which is a compliance requirement, not just a11y. */
+.consent-banner__btn:focus-visible,
+.consent-fab:focus-visible {
+    outline: 2px solid var(--kcc-accent, #ff4c5e);
+    outline-offset: 2px;
+}
+
+.consent-banner__legal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 20px 0 0;
+    font-size: 12px;
+}
+
+.consent-banner__legal a {
+    color: var(--kcc-link, #400530);
+    text-decoration: underline;
+}
+
+.consent-banner__given {
+    opacity: 0.7;
+}
+
+body.consent-open {
+    overflow: hidden;
+}
+
+body.consent-open .consent-fab,
+.consent-banner:not([hidden]) + .consent-fab {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.consent-fab {
+    position: fixed;
+    left: 16px;
+    bottom: 88px;
+    z-index: 9998;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--kcc-fab-icon, #ff4c5e);
+    background: var(--kcc-fab-bg, #400530);
+    color: var(--kcc-fab-icon, #ff4c5e);
+    cursor: pointer;
+    padding: 0;
+}
+
+.consent-fab:hover {
+    background: var(--kcc-fab-icon, #ff4c5e);
+    color: var(--kcc-fab-bg, #400530);
+}
+
+@media (min-width: 768px) {
+    .consent-fab {
+        left: 24px;
+        bottom: 24px;
+    }
+}
+
+@media (max-width: 500px) {
+    .consent-fab {
+        display: none;
+    }
+}
+
+/* Placeholder shown where a third-party embed was blocked — used by both the
+   server-side scanner and the runtime guard. */
+.consent-gate {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 32px;
+    background: var(--kcc-surface, #fff);
+    color: var(--kcc-text, #400530);
+    border: 1px solid color-mix(in srgb, var(--kcc-text, #400530) 15%, transparent);
+    text-align: center;
+}
+
+.consent-gate__title {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--kcc-text, #400530);
+}
+
+.consent-gate__text {
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.consent-gate__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.consent-gate .consent-banner__btn {
+    margin-inline: auto;
+}
+
+.consent-gate__actions .consent-banner__btn {
+    margin-inline: 0;
+}
+
+/* A gate inside a video frame fills it rather than sitting on top. */
+.consent-gate--video {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+[data-consent-open]:not(.consent-banner__btn):not(.consent-fab) {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    text-transform: inherit;
+}
