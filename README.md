@@ -7,7 +7,7 @@ guard for JavaScript-created embeds.
 By [kirbycode](https://www.kirbycode.com/) · MIT licensed.
 
 Forked from `lohnzich/opentable-consent` by LOHNZICH (MIT). The original
-copyright notice is retained in `LICENSE.md` as that licence requires.
+copyright notice is retained in `LICENSE` as that licence requires.
 
 ## Install
 

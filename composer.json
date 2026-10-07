@@ -29,8 +29,8 @@
     ],
     "support": {
         "email": "shiv.sheladiya@gmail.com",
-        "source": "https://github.com/kirbycode/kirby-cookie-compliance",
-        "issues": "https://github.com/kirbycode/kirby-cookie-compliance/issues"
+        "source": "https://github.com/logitechshiv/Cookie-Compliance-for-Kirby",
+        "issues": "https://github.com/logitechshiv/Cookie-Compliance-for-Kirby/issues"
     },
     "require": {
         "php": ">=8.2",
