@@ -282,6 +282,46 @@ One entry serves **both** layers — the PHP scanner reads it directly, and the 
 guard receives a slimmed copy through the config element. Never fork the list
 into the JavaScript.
 
+### `scriptPatterns` — for vendors with a loader *and* an initialiser
+
+Many embeds ship as two scripts: an external loader, then an inline call to the
+global it defines. HubSpot is the classic case:
+
+```html
+<script src="//js-eu1.hsforms.net/forms/embed/v2.js"></script>
+<script>hbspt.forms.create({ portalId: "…", formId: "…" });</script>
+```
+
+Blocking only the loader leaves the second script running, and it throws
+`Uncaught ReferenceError: hbspt is not defined` — the form is gone *and* the
+console is broken. `scriptPatterns` closes this: regexes matched against inline
+script bodies, so the initialiser is neutralised with its loader.
+
+```php
+'hubspot' => [
+    'name'           => 'HubSpot',
+    'hosts'          => ['*.hsforms.net', '*.hs-scripts.com'],
+    'category'       => 'marketing',
+    'scriptPatterns' => ['\bhbspt\s*\.'],
+],
+```
+
+Keep the patterns **distinctive**. A loose one like `\bhj\s*\(` would match any
+minified inline script with an `hj` local and silently block unrelated code;
+Hotjar is matched on `_hjSettings` instead.
+
+Whenever you add a vendor that renders something visible, check the page with no
+consent: you should get a placeholder, not an empty hole.
+
+### Placeholders for blocked scripts
+
+A blocked `<script>` in the `<body>` renders the gate placeholder, because such a
+script usually produces something the visitor expects — a form, a widget, a map.
+Removing it silently would leave unexplained empty space. Scripts in `<head>`
+always become an inert comment instead, and only the first script per vendor
+gets a placeholder. Disable with
+`scan.placeholderForScripts => false`.
+
 Then **bump `Consent::VERSION`** so everyone is re-prompted. A cookie written
 against an older version counts as an incomplete decision, which is the supported
 way to re-ask after the vendor list changes.

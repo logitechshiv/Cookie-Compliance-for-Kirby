@@ -38,6 +38,9 @@ final class Scanner
     /** Vendors detected on the current render, keyed by vendor id. */
     private static array $detected = [];
 
+    /** Vendors that already got a visible script placeholder this render. */
+    private static array $placeheld = [];
+
     /**
      * Gate every un-consented third-party resource in the given HTML.
      */
@@ -57,7 +60,8 @@ final class Scanner
             return $html;
         }
 
-        static::$detected = [];
+        static::$detected  = [];
+        static::$placeheld = [];
 
         $tags = (array) option('kirbycode.cookie-compliance.scan.elements', [
             'iframe', 'script', 'img', 'link', 'embed', 'object',
@@ -102,10 +106,16 @@ final class Scanner
             ? '#<' . $tag . '\b[^>]*>.*?</' . $tag . '\s*>#is'
             : '#<' . $tag . '\b[^>]*?/?>#is';
 
+        // Where <head> ends, so a blocked body script can show a visible
+        // placeholder while a blocked head script stays an inert comment.
+        $headEnd = stripos($html, '</head>');
+        $headEnd = $headEnd === false ? 0 : $headEnd;
+
         $result = preg_replace_callback(
             $pattern,
-            function (array $match) use ($tag, $attribute): string {
-                $element = $match[0];
+            function (array $match) use ($tag, $attribute, $headEnd): string {
+                $element = $match[0][0];
+                $offset  = $match[0][1];
                 $url     = static::attribute($element, $attribute);
 
                 if ($url === null) {
@@ -121,9 +131,10 @@ final class Scanner
 
                 static::$detected[$decision['vendor']] = $decision['category'];
 
-                return static::gate($tag, $url, $decision);
+                return static::gate($tag, $url, $decision, $offset > $headEnd);
             },
-            $html
+            $html,
+            flags: PREG_OFFSET_CAPTURE
         );
 
         // A catastrophic backtrack or encoding error must never blank the page.
@@ -244,6 +255,10 @@ final class Scanner
     private static function decideByContent(string $body): array|null
     {
         foreach (static::vendors() as $id => $config) {
+            $category = $config['category'] ?? 'marketing';
+
+            // A hostname mentioned in the script body, e.g. the GTM snippet
+            // building "https://www.googletagmanager.com/gtm.js?id=" at runtime.
             foreach ((array) ($config['hosts'] ?? []) as $pattern) {
                 $needle = str_replace('*.', '', (string) $pattern);
 
@@ -251,13 +266,19 @@ final class Scanner
                     continue;
                 }
 
-                $category = $config['category'] ?? 'marketing';
+                return Consent::has($category) ? null : ['vendor' => $id, 'category' => $category];
+            }
 
-                if (Consent::has($category) === true) {
-                    return null;
+            // A JavaScript identifier the vendor's loader defines, e.g. HubSpot's
+            // `hbspt.forms.create(...)`. Without this an initialiser that names no
+            // hostname survives while its loader is blocked, and then throws
+            // "hbspt is not defined" the moment it runs.
+            foreach ((array) ($config['scriptPatterns'] ?? []) as $pattern) {
+                if (@preg_match('#' . $pattern . '#i', $body) !== 1) {
+                    continue;
                 }
 
-                return ['vendor' => $id, 'category' => $category];
+                return Consent::has($category) ? null : ['vendor' => $id, 'category' => $category];
             }
         }
 
@@ -267,14 +288,39 @@ final class Scanner
     /**
      * Build the replacement markup for a gated element.
      */
-    private static function gate(string $tag, string $url, array $decision): string
-    {
-        // Scripts, stylesheets and pixels have no meaningful visual placeholder;
-        // dropping them to an inert type is enough.
-        if ($tag === 'script' || $tag === 'link' || $tag === 'img') {
-            return '<!-- blocked by consent: '
-                . htmlspecialchars($decision['vendor'], ENT_QUOTES)
-                . ' (' . htmlspecialchars($decision['category'], ENT_QUOTES) . ') -->';
+    private static function gate(
+        string $tag,
+        string $url,
+        array $decision,
+        bool $inBody = false
+    ): string {
+        $comment = '<!-- blocked by consent: '
+            . htmlspecialchars($decision['vendor'], ENT_QUOTES)
+            . ' (' . htmlspecialchars($decision['category'], ENT_QUOTES) . ') -->';
+
+        // Stylesheets and pixels are never visible in their own right.
+        if ($tag === 'link' || $tag === 'img') {
+            return $comment;
+        }
+
+        // A script in <head> has no place on the page, so an inert comment is
+        // right. A script in <body> is usually an embed — a form, a widget, a
+        // map — and silently removing it leaves an unexplained empty hole where
+        // the visitor expected something. Those get a placeholder telling them
+        // why it is missing and how to get it back.
+        if ($tag === 'script') {
+            if ($inBody === false || option('kirbycode.cookie-compliance.scan.placeholderForScripts', true) === false) {
+                return $comment;
+            }
+
+            // A vendor often ships several scripts in a row; one explanation is
+            // enough. Iframes are not deduplicated — two embedded videos should
+            // each keep their own placeholder.
+            if (isset(static::$placeheld[$decision['vendor']]) === true) {
+                return $comment;
+            }
+
+            static::$placeheld[$decision['vendor']] = true;
         }
 
         return snippet('cookie-compliance/gate', [

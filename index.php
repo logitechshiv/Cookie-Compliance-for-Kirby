@@ -59,6 +59,12 @@ App::plugin('kirbycode/cookie-compliance', [
             'inlineScripts'   => true,
             'gateUnknown'     => true,
             'unknownCategory' => 'marketing',
+
+            // Show a visible placeholder where a blocked <script> in the <body>
+            // would have rendered something (an embedded form, a widget, a map),
+            // instead of leaving an unexplained empty space. Head scripts always
+            // become an inert comment.
+            'placeholderForScripts' => true,
         ],
 
         // Consent category -> Google Consent Mode v2 signals.
@@ -69,10 +75,23 @@ App::plugin('kirbycode/cookie-compliance', [
         ],
 
         'vendors' => [
+            // `scriptPatterns` match the body of an INLINE script. They matter
+            // whenever a vendor ships a loader plus a separate initialiser: if
+            // only the loader is blocked, the initialiser still runs and throws
+            // a ReferenceError. Matching the global it calls blocks both.
             'googletagmanager' => [
                 'name'     => 'Google Tag Manager',
                 'hosts'    => ['*.googletagmanager.com'],
                 'category' => 'marketing',
+            ],
+            'hubspot' => [
+                'name'     => 'HubSpot',
+                'hosts'    => [
+                    '*.hsforms.net', '*.hsforms.com', '*.hs-scripts.com',
+                    '*.hs-analytics.net', '*.hscollectedforms.net', '*.hubspot.com',
+                ],
+                'category'       => 'marketing',
+                'scriptPatterns' => ['\bhbspt\s*\.'],
             ],
             'googleanalytics' => [
                 'name'     => 'Google Analytics',
@@ -115,9 +134,10 @@ App::plugin('kirbycode/cookie-compliance', [
                 'category' => 'marketing',
             ],
             'facebook' => [
-                'name'     => 'Facebook',
-                'hosts'    => ['*.facebook.com', '*.facebook.net', '*.fbcdn.net'],
-                'category' => 'marketing',
+                'name'           => 'Facebook',
+                'hosts'          => ['*.facebook.com', '*.facebook.net', '*.fbcdn.net'],
+                'category'       => 'marketing',
+                'scriptPatterns' => ['\bfbq\s*\('],
             ],
             'linkedin' => [
                 'name'     => 'LinkedIn',
@@ -130,9 +150,12 @@ App::plugin('kirbycode/cookie-compliance', [
                 'category' => 'marketing',
             ],
             'hotjar' => [
-                'name'     => 'Hotjar',
-                'hosts'    => ['*.hotjar.com', '*.hotjar.io'],
-                'category' => 'statistics',
+                'name'           => 'Hotjar',
+                'hosts'          => ['*.hotjar.com', '*.hotjar.io'],
+                'category'       => 'statistics',
+                // Only the distinctive settings object: a bare `hj(` would
+                // false-positive against any minified script with an `hj` local.
+                'scriptPatterns' => ['_hjSettings'],
             ],
             'opentable' => [
                 'name'     => 'OpenTable',

@@ -117,9 +117,14 @@
   /**
    * Elements the server gated are static placeholders — the real markup only
    * comes back from a fresh render, so granting consent reloads the page.
+   *
+   * [data-consent-blocked] covers neutralised inline scripts. Those cannot
+   * simply be re-run in place: a loader and its initialiser have to execute in
+   * order, and the loader is asynchronous. A reload is the only way to restore
+   * that ordering correctly.
    */
   function hasServerGates() {
-    return !!document.querySelector("[data-consent-gate]");
+    return !!document.querySelector("[data-consent-gate], [data-consent-blocked]");
   }
 
   function notify() {

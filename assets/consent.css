@@ -233,14 +233,27 @@ body.consent-open .consent-fab,
     margin-inline: 0;
 }
 
-/* A gate inside a video frame fills it rather than sitting on top. */
+/* A gate inside a video frame fills it rather than sitting on top.
+ *
+ * The z-index is not cosmetic. A blocked <iframe> stays in the DOM with its src
+ * withheld, and a player that marks itself "playing" will often reveal that
+ * empty iframe as a positioned, stacked box — which then sits over the gate and
+ * swallows every click, making the buttons look dead. The gate has to win that
+ * stacking contest. */
 .consent-gate--video {
     position: absolute;
     inset: 0;
+    z-index: 2147483000;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+}
+
+/* A blocked element can never do anything useful, so it must not intercept
+   pointer events meant for the gate in front of it. */
+[data-consent-src] {
+    pointer-events: none !important;
 }
 
 [data-consent-open]:not(.consent-banner__btn):not(.consent-fab) {
