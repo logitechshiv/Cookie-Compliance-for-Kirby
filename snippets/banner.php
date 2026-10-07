@@ -95,9 +95,11 @@ $imprint = Settings::page('imprint_page', 'impressum');
     </svg>
 </button>
 
-<?php if (!$decided): ?>
-<script data-consent-keep>document.body.classList.add('consent-open');</script>
-<?php endif ?>
+<?php /* The scroll lock is applied to <body> server-side by Injector::lockScroll().
+   Doing it from JavaScript here would remove the scrollbar after first paint and
+   shift the entire page sideways. Without JS the dialog cannot be dismissed, so
+   release the lock rather than trapping the visitor on a frozen page. */ ?>
+<noscript><style>body.consent-open{overflow:auto}</style></noscript>
 <?php if (is_file($jsFile)): ?>
 <script data-consent-keep><?= F::read($jsFile) ?></script>
 <?php endif ?>

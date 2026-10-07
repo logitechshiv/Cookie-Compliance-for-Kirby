@@ -21,6 +21,10 @@ final class Injector
             $html = static::afterOpeningTag($html, 'body', 'cookie-compliance/gtm-noscript');
         }
 
+        if (Consent::isDecided() === false) {
+            $html = static::lockScroll($html);
+        }
+
         if (option('kirbycode.cookie-compliance.inject.banner', true) === true) {
             $html = static::beforeClosingBody($html, 'cookie-compliance/banner');
         }
@@ -52,6 +56,50 @@ final class Injector
         $at = $match[0][1] + strlen($match[0][0]);
 
         return substr($html, 0, $at) . "\n" . $markup . substr($html, $at);
+    }
+
+    /**
+     * Put the scroll-lock class on <body> server-side, in the markup itself.
+     *
+     * This has to happen here rather than from JavaScript. Adding the class
+     * after the page has painted removes the scrollbar at that moment, the
+     * viewport widens by its width, and every percentage-width box on the page
+     * shifts horizontally — a large, entirely avoidable CLS penalty that hits
+     * the whole document at once. With the class present in the first byte of
+     * <body>, no scrollbar is ever rendered, so there is nothing to take away.
+     */
+    private static function lockScroll(string $html): string
+    {
+        if (preg_match('#<body(\s[^>]*)?>#i', $html, $match, PREG_OFFSET_CAPTURE) !== 1) {
+            return $html;
+        }
+
+        $tag    = $match[0][0];
+        $offset = $match[0][1];
+
+        // Already locked (a second pass, or the template set it itself).
+        if (preg_match('#\bclass\s*=\s*["\'][^"\']*\bconsent-open\b#i', $tag) === 1) {
+            return $html;
+        }
+
+        $updated = preg_replace(
+            '#(\bclass\s*=\s*)(["\'])(.*?)\2#is',
+            '$1$2$3 consent-open$2',
+            $tag,
+            1,
+            $count
+        );
+
+        // No class attribute at all — add one.
+        if ($count === 0) {
+            $updated = preg_replace('#<body#i', '<body class="consent-open"', $tag, 1);
+        }
+
+        if (is_string($updated) === false) {
+            return $html;
+        }
+
+        return substr($html, 0, $offset) . $updated . substr($html, $offset + strlen($tag));
     }
 
     /**
