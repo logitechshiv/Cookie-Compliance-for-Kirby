@@ -59,6 +59,46 @@
   }
 
   /**
+   * The base every relative URL on this page resolves against.
+   *
+   * Not always location.href. A document served from an opaque-path URL — a
+   * `blob:` document, which is how Panel preview plugins mount a rendered page
+   * into an iframe — has an empty location.hostname, and resolving a relative
+   * URL against it throws. document.baseURI follows any <base> such a page
+   * carries, and is the base the browser itself uses, so it is the correct
+   * reference in both cases. Read per call: <base> may be parsed after this
+   * script has run.
+   */
+  function baseHref() {
+    var base = document.baseURI || window.location.href || "";
+    // An opaque-path base is unusable for resolution; fall back to the real
+    // origin, which a blob: URL still carries.
+    if (base.indexOf("blob:") === 0 || base.indexOf("data:") === 0) {
+      return window.location.origin || "";
+    }
+    return base;
+  }
+
+  /** The host this document counts as its own, or "" when undeterminable. */
+  function ownHost() {
+    var candidates = [window.location.hostname, baseHref(), window.location.origin];
+    for (var i = 0; i < candidates.length; i++) {
+      var value = String(candidates[i] || "");
+      if (!value) continue;
+      if (value.indexOf("/") === -1 && value.indexOf(":") === -1) {
+        return value.toLowerCase();
+      }
+      try {
+        var host = new URL(value).hostname;
+        if (host) return host.toLowerCase();
+      } catch (e) {
+        /* try the next candidate */
+      }
+    }
+    return "";
+  }
+
+  /**
    * @return {null|{vendor:string,category:string}} null = allow as-is
    */
   function decide(url) {
@@ -70,15 +110,15 @@
 
     var host;
     try {
-      host = new URL(url, window.location.href).hostname.toLowerCase();
+      host = new URL(url, baseHref()).hostname.toLowerCase();
     } catch (e) {
       return null;
     }
     if (!host) return null;
 
     // Same origin and its subdomains are never gated.
-    var own = window.location.hostname.toLowerCase();
-    if (host === own || host.slice(-(own.length + 1)) === "." + own) return null;
+    var own = ownHost();
+    if (own && (host === own || host.slice(-(own.length + 1)) === "." + own)) return null;
 
     for (var a = 0; a < ALLOW.length; a++) {
       if (hostMatches(host, ALLOW[a])) return null;
@@ -101,7 +141,11 @@
     }
 
     if (!vendor) {
-      if (!GATE_UNKNOWN) return null;
+      // Fail closed on an unrecognised host — but only once we actually know
+      // which host is ours. Without that every same-origin asset looks third
+      // party and the document would block itself. Known vendors are still
+      // gated in that case, so the privacy guarantee is kept either way.
+      if (!GATE_UNKNOWN || !own) return null;
       vendor = "unknown:" + host;
       category = UNKNOWN_CATEGORY;
     }
