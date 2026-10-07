@@ -17,6 +17,13 @@ namespace Kirbycode\CookieCompliance;
  */
 final class Scanner
 {
+    /**
+     * How close two blocked scripts of the same vendor must be, in bytes of
+     * source, before the second is treated as part of the same embed and left
+     * without its own placeholder.
+     */
+    private const PLACEHOLDER_GAP = 600;
+
     /** Tags that carry no closing tag in HTML5. */
     private const VOID_TAGS = ['img', 'link', 'embed'];
 
@@ -38,7 +45,7 @@ final class Scanner
     /** Vendors detected on the current render, keyed by vendor id. */
     private static array $detected = [];
 
-    /** Vendors that already got a visible script placeholder this render. */
+    /** Vendor id => source offset where its last script placeholder went. */
     private static array $placeheld = [];
 
     /**
@@ -131,7 +138,7 @@ final class Scanner
 
                 static::$detected[$decision['vendor']] = $decision['category'];
 
-                return static::gate($tag, $url, $decision, $offset > $headEnd);
+                return static::gate($tag, $url, $decision, $offset > $headEnd, $offset);
             },
             $html,
             flags: PREG_OFFSET_CAPTURE
@@ -292,7 +299,8 @@ final class Scanner
         string $tag,
         string $url,
         array $decision,
-        bool $inBody = false
+        bool $inBody = false,
+        int $offset = 0
     ): string {
         $comment = '<!-- blocked by consent: '
             . htmlspecialchars($decision['vendor'], ENT_QUOTES)
@@ -313,14 +321,18 @@ final class Scanner
                 return $comment;
             }
 
-            // A vendor often ships several scripts in a row; one explanation is
-            // enough. Iframes are not deduplicated — two embedded videos should
-            // each keep their own placeholder.
-            if (isset(static::$placeheld[$decision['vendor']]) === true) {
+            // Collapse only placeholders that are genuinely next to each other,
+            // as when a vendor ships two adjacent loader scripts. Deduplicating
+            // per vendor across the whole page would be wrong: the same embed
+            // often appears in several places — a newsletter block and the
+            // footer, say — and each of those needs its own explanation.
+            $previous = static::$placeheld[$decision['vendor']] ?? null;
+
+            if ($previous !== null && ($offset - $previous) < static::PLACEHOLDER_GAP) {
                 return $comment;
             }
 
-            static::$placeheld[$decision['vendor']] = true;
+            static::$placeheld[$decision['vendor']] = $offset;
         }
 
         return snippet('cookie-compliance/gate', [

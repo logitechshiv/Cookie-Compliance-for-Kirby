@@ -318,8 +318,12 @@ consent: you should get a placeholder, not an empty hole.
 A blocked `<script>` in the `<body>` renders the gate placeholder, because such a
 script usually produces something the visitor expects — a form, a widget, a map.
 Removing it silently would leave unexplained empty space. Scripts in `<head>`
-always become an inert comment instead, and only the first script per vendor
-gets a placeholder. Disable with
+always become an inert comment instead.
+
+The same embed often appears in more than one place — a newsletter block *and*
+the footer, say — and each location gets its own placeholder. Only placeholders
+that are genuinely adjacent in the source are collapsed, which covers a vendor
+shipping two loader scripts in a row. Disable the whole behaviour with
 `scan.placeholderForScripts => false`.
 
 Then **bump `Consent::VERSION`** so everyone is re-prompted. A cookie written
